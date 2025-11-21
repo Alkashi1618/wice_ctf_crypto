@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WiCE CTF 2025 - CryptoApp</title>
+    <title>WiCE CTF 2025 - CryptoLab</title>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
     <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsencrypt/3.3.2/jsencrypt.min.js"></script>
     <style>
         body {
             margin: 0;
@@ -29,7 +31,7 @@
     <script type="text/babel">
         const { useState } = React;
 
-        // Lucide Icons as SVG components
+        // Icones Lucide
         const Lock = ({ className }) => (
             <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
@@ -77,7 +79,537 @@
             </svg>
         );
 
+        const Cpu = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="4" y="4" width="16" height="16" rx="2"/>
+                <rect x="9" y="9" width="6" height="6"/>
+                <path d="M9 2v2M15 2v2M9 22v2M15 22v2M2 9h2M2 15h2M22 9h2M22 15h2"/>
+            </svg>
+        );
+
+        const FileKey = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                <circle cx="10" cy="16" r="2"/>
+                <path d="m16 10-4.5 4.5M15 11l1 1"/>
+            </svg>
+        );
+
+        const Hash = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <line x1="4" y1="9" x2="20" //y1="9"
+                />
+                <line x1="4" y1="15" x2="20" //y1="15"
+                />
+                <line x1="10" y1="3" x2="8" //y1="21"
+                />
+                <line x1="16" y1="3" x2="14" //y1="21"
+                />
+            </svg>
+        );
+
+        const Fingerprint = ({ className }) => (
+            <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M12 10a2 2 0 0 0-2 2c0 1.02-.06 2.51-.34 3.57-.21.75.33 1.43 1.03 1.43h2.62c.7 0 1.24-.68 1.03-1.43-.28-1.06-.34-2.55-.34-3.57a2 2 0 0 0-2-2z"/>
+                <path d="M12 10v4"/>
+                <path d="M12 18h.01"/>
+                <path d="M7 15a5 5 0 0 1 10 0"/>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+        );
+
+        // ==================== GESTIONNAIRE DE HACHAGE ====================
+        const HashManager = () => {
+            const [hashInput, setHashInput] = useState('');
+            const [hashResults, setHashResults] = useState({});
+            const [selectedAlgorithm, setSelectedAlgorithm] = useState('SHA256');
+
+            const hashAlgorithms = [
+                { id: 'MD5', name: 'MD5', color: 'from-red-500 to-pink-500' },
+                { id: 'SHA1', name: 'SHA-1', color: 'from-orange-500 to-red-500' },
+                { id: 'SHA256', name: 'SHA-256', color: 'from-green-500 to-emerald-500' },
+                { id: 'SHA512', name: 'SHA-512', color: 'from-blue-500 to-cyan-500' },
+                { id: 'SHA3', name: 'SHA-3', color: 'from-purple-500 to-pink-500' }
+            ];
+
+            const computeHashes = (text) => {
+                if (!text.trim()) {
+                    setHashResults({});
+                    return;
+                }
+
+                const results = {
+                    MD5: CryptoJS.MD5(text).toString(),
+                    SHA1: CryptoJS.SHA1(text).toString(),
+                    SHA256: CryptoJS.SHA256(text).toString(),
+                    SHA512: CryptoJS.SHA512(text).toString(),
+                    SHA3: CryptoJS.SHA3(text).toString()
+                };
+
+                setHashResults(results);
+            };
+
+            const handleInputChange = (text) => {
+                setHashInput(text);
+                computeHashes(text);
+            };
+
+            const copyToClipboard = (hash) => {
+                navigator.clipboard.writeText(hash);
+                alert('Hash copié dans le presse-papier !');
+            };
+
+            return (
+                <div className="space-y-6">
+                    <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <Hash className="w-5 h-5 text-indigo-400" />
+                            Calcul de Hachage
+                        </h3>
+                        
+                        <textarea
+                            value={hashInput}
+                            onChange={(e) => handleInputChange(e.target.value)}
+                            placeholder="Entrez le texte à hacher..."
+                            className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg h-32 mb-4 border border-purple-500/30"
+                        />
+
+                        <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-6">
+                            {hashAlgorithms.map(algo => (
+                                <button
+                                    key={algo.id}
+                                    onClick={() => setSelectedAlgorithm(algo.id)}
+                                    className={`py-2 px-3 rounded-lg font-medium text-sm transition-all ${
+                                        selectedAlgorithm === algo.id
+                                            ? `bg-gradient-to-r ${algo.color} text-white shadow-lg`
+                                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                                    }`}
+                                >
+                                    {algo.name}
+                                </button>
+                            ))}
+                        </div>
+
+                        {hashInput && (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-indigo-300 mb-2 font-medium">
+                                        Résultat {hashAlgorithms.find(a => a.id === selectedAlgorithm)?.name}
+                                    </label>
+                                    <div className="bg-gradient-to-r from-indigo-900/50 to-purple-900/50 text-white px-4 py-3 rounded-lg border-2 border-indigo-500/50 font-mono text-sm break-all">
+                                        {hashResults[selectedAlgorithm]}
+                                    </div>
+                                    <button
+                                        onClick={() => copyToClipboard(hashResults[selectedAlgorithm])}
+                                        className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+                                    >
+                                        📋 Copier
+                                    </button>
+                                </div>
+
+                                <div className="bg-slate-700/30 rounded-lg p-4">
+                                    <h4 className="text-white font-semibold mb-3">Tous les hachages</h4>
+                                    <div className="space-y-2">
+                                        {Object.entries(hashResults).map(([algo, hash]) => (
+                                            <div key={algo} className="flex items-center justify-between">
+                                                <span className="text-slate-300 text-sm">{algo}:</span>
+                                                <code className="text-green-400 text-xs font-mono truncate max-w-xs">
+                                                    {hash}
+                                                </code>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <Fingerprint className="w-5 h-5 text-blue-400" />
+                            Information sur le Hachage
+                        </h3>
+                        <div className="text-slate-300 space-y-3">
+                            <p><strong>🔐 Qu'est-ce que le hachage ?</strong></p>
+                            <p className="text-sm">Le hachage est une fonction qui transforme des données de taille variable en une chaîne de taille fixe. C'est unidirectionnel - impossible de retrouver les données originales.</p>
+                            
+                            <p><strong>🎯 Utilisations courantes :</strong></p>
+                            <ul className="text-sm list-disc list-inside space-y-1">
+                                <li>Vérification d'intégrité de fichiers</li>
+                                <li>Stockage sécurisé de mots de passe</li>
+                                <li>Signatures digitales</li>
+                                <li>Preuves de travail (Blockchain)</li>
+                            </ul>
+
+                            <p><strong>⚡ Algorithmes disponibles :</strong></p>
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="bg-red-500/10 p-2 rounded">MD5 - 128 bits (obsolète)</div>
+                                <div className="bg-orange-500/10 p-2 rounded">SHA-1 - 160 bits (déprécié)</div>
+                                <div className="bg-green-500/10 p-2 rounded">SHA-256 - 256 bits (sécurisé)</div>
+                                <div className="bg-blue-500/10 p-2 rounded">SHA-512 - 512 bits (très sécurisé)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== IMPLÉMENTATION AES ====================
+        const AESManager = () => {
+            const [aesKey, setAesKey] = useState('');
+            const [aesInput, setAesInput] = useState('');
+            const [aesOutput, setAesOutput] = useState('');
+            const [aesMode, setAesMode] = useState('encrypt');
+
+            const generateAESKey = () => {
+                const key = CryptoJS.lib.WordArray.random(32);
+                const keyBase64 = CryptoJS.enc.Base64.stringify(key);
+                setAesKey(keyBase64);
+            };
+
+            const encryptAES = (text, key) => {
+                try {
+                    const keyBytes = CryptoJS.enc.Base64.parse(key);
+                    const iv = CryptoJS.lib.WordArray.random(16);
+                    
+                    const encrypted = CryptoJS.AES.encrypt(text, keyBytes, {
+                        iv: iv,
+                        mode: CryptoJS.mode.CBC,
+                        padding: CryptoJS.pad.Pkcs7
+                    });
+                    
+                    const combined = iv.concat(encrypted.ciphertext);
+                    return CryptoJS.enc.Base64.stringify(combined);
+                } catch (error) {
+                    throw new Error('Erreur de chiffrement AES: ' + error.message);
+                }
+            };
+
+            const decryptAES = (encryptedBase64, key) => {
+                try {
+                    const keyBytes = CryptoJS.enc.Base64.parse(key);
+                    const combined = CryptoJS.enc.Base64.parse(encryptedBase64);
+                    
+                    const iv = CryptoJS.lib.WordArray.create(combined.words.slice(0, 4));
+                    const ciphertext = CryptoJS.lib.WordArray.create(combined.words.slice(4));
+                    
+                    const decrypted = CryptoJS.AES.decrypt(
+                        { ciphertext: ciphertext },
+                        keyBytes,
+                        {
+                            iv: iv,
+                            mode: CryptoJS.mode.CBC,
+                            padding: CryptoJS.pad.Pkcs7
+                        }
+                    );
+                    
+                    return decrypted.toString(CryptoJS.enc.Utf8);
+                } catch (error) {
+                    throw new Error('Erreur de déchiffrement AES: ' + error.message);
+                }
+            };
+
+            const handleAESProcess = () => {
+                if (!aesKey) {
+                    alert('Veuillez d\'abord générer une clé AES');
+                    return;
+                }
+
+                try {
+                    if (aesMode === 'encrypt') {
+                        const encrypted = encryptAES(aesInput, aesKey);
+                        setAesOutput(encrypted);
+                    } else {
+                        const decrypted = decryptAES(aesInput, aesKey);
+                        setAesOutput(decrypted);
+                    }
+                } catch (error) {
+                    alert(error.message);
+                }
+            };
+
+            return (
+                <div className="space-y-6">
+                    <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <Cpu className="w-5 h-5 text-blue-400" />
+                            Clé AES-256
+                        </h3>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={generateAESKey}
+                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-semibold transition-all"
+                            >
+                                Générer Clé
+                            </button>
+                            <input
+                                type="text"
+                                value={aesKey}
+                                onChange={(e) => setAesKey(e.target.value)}
+                                placeholder="Clé AES (Base64)"
+                                className="flex-1 bg-slate-700/50 text-white px-4 py-2 rounded-lg border border-purple-500/30"
+                            />
+                        </div>
+                        {aesKey && (
+                            <p className="text-green-400 text-sm mt-2">
+                                ✅ Clé AES-256 générée ({aesKey.length} caractères)
+                            </p>
+                        )}
+                    </div>
+
+                    <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                        <h3 className="text-lg font-semibold text-white mb-4">
+                            {aesMode === 'encrypt' ? '🔐 Chiffrement AES' : '🔓 Déchiffrement AES'}
+                        </h3>
+                        
+                        <div className="flex gap-3 mb-4">
+                            <button
+                                onClick={() => setAesMode('encrypt')}
+                                className={`flex-1 py-2 rounded-lg font-medium ${
+                                    aesMode === 'encrypt'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-700/50 text-slate-300'
+                                }`}
+                            >
+                                Chiffrer
+                            </button>
+                            <button
+                                onClick={() => setAesMode('decrypt')}
+                                className={`flex-1 py-2 rounded-lg font-medium ${
+                                    aesMode === 'decrypt'
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-700/50 text-slate-300'
+                                }`}
+                            >
+                                Déchiffrer
+                            </button>
+                        </div>
+
+                        <textarea
+                            value={aesInput}
+                            onChange={(e) => setAesInput(e.target.value)}
+                            placeholder={aesMode === 'encrypt' ? 'Message à chiffrer...' : 'Message chiffré (Base64)...'}
+                            className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg h-32 mb-4 border border-purple-500/30"
+                        />
+
+                        <button
+                            onClick={handleAESProcess}
+                            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 transition-all"
+                        >
+                            {aesMode === 'encrypt' ? '🔐 Chiffrer avec AES' : '🔓 Déchiffrer avec AES'}
+                        </button>
+
+                        {aesOutput && (
+                            <div className="mt-4">
+                                <label className="block text-blue-300 mb-2 font-medium">
+                                    {aesMode === 'encrypt' ? '✅ Message chiffré' : '✅ Message déchiffré'}
+                                </label>
+                                <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 text-white px-4 py-3 rounded-lg min-h-20 break-words border-2 border-blue-500/50 font-mono">
+                                    {aesOutput}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== IMPLÉMENTATION RSA ====================
+        const RSAManager = () => {
+            const [rsaPrivateKey, setRsaPrivateKey] = useState('');
+            const [rsaPublicKey, setRsaPublicKey] = useState('');
+            const [rsaInput, setRsaInput] = useState('');
+            const [rsaOutput, setRsaOutput] = useState('');
+            const [rsaMode, setRsaMode] = useState('encrypt');
+            const [rsaSignature, setRsaSignature] = useState('');
+
+            const generateRSAKeys = () => {
+                const crypt = new JSEncrypt({ default_key_size: "2048" });
+                crypt.getKey();
+                
+                setRsaPrivateKey(crypt.getPrivateKey());
+                setRsaPublicKey(crypt.getPublicKey());
+            };
+
+            const encryptRSA = (text, publicKey) => {
+                const crypt = new JSEncrypt();
+                crypt.setPublicKey(publicKey);
+                const encrypted = crypt.encrypt(text);
+                if (!encrypted) throw new Error('Erreur de chiffrement RSA');
+                return encrypted;
+            };
+
+            const decryptRSA = (encryptedBase64, privateKey) => {
+                const crypt = new JSEncrypt();
+                crypt.setPrivateKey(privateKey);
+                const decrypted = crypt.decrypt(encryptedBase64);
+                if (!decrypted) throw new Error('Erreur de déchiffrement RSA');
+                return decrypted;
+            };
+
+            const signMessage = (message, privateKey) => {
+                const crypt = new JSEncrypt();
+                crypt.setPrivateKey(privateKey);
+                const signature = crypt.sign(message, CryptoJS.SHA256, "sha256");
+                if (!signature) throw new Error('Erreur de signature');
+                return signature;
+            };
+
+            const verifySignature = (message, signature, publicKey) => {
+                const crypt = new JSEncrypt();
+                crypt.setPublicKey(publicKey);
+                return crypt.verify(message, signature, CryptoJS.SHA256);
+            };
+
+            const handleRSAProcess = () => {
+                try {
+                    if (rsaMode === 'encrypt') {
+                        if (!rsaPublicKey) throw new Error('Clé publique requise');
+                        const encrypted = encryptRSA(rsaInput, rsaPublicKey);
+                        setRsaOutput(encrypted);
+                    } else if (rsaMode === 'decrypt') {
+                        if (!rsaPrivateKey) throw new Error('Clé privée requise');
+                        const decrypted = decryptRSA(rsaInput, rsaPrivateKey);
+                        setRsaOutput(decrypted);
+                    } else if (rsaMode === 'sign') {
+                        if (!rsaPrivateKey) throw new Error('Clé privée requise');
+                        const signature = signMessage(rsaInput, rsaPrivateKey);
+                        setRsaSignature(signature);
+                    } else if (rsaMode === 'verify') {
+                        if (!rsaPublicKey) throw new Error('Clé publique requise');
+                        const isValid = verifySignature(rsaInput, rsaSignature, rsaPublicKey);
+                        setRsaOutput(isValid ? '✅ Signature VALIDE' : '❌ Signature INVALIDE');
+                    }
+                } catch (error) {
+                    alert(error.message);
+                }
+            };
+
+            return (
+                <div className="space-y-6">
+                    <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                        <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <FileKey className="w-5 h-5 text-green-400" />
+                            Clés RSA-2048
+                        </h3>
+                        <button
+                            onClick={generateRSAKeys}
+                            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-semibold transition-all mb-4"
+                        >
+                            Générer Paire de Clés
+                        </button>
+
+                        <div className="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-green-300 mb-2">Clé Publique</label>
+                                <textarea
+                                    value={rsaPublicKey}
+                                    onChange={(e) => setRsaPublicKey(e.target.value)}
+                                    placeholder="Clé publique RSA..."
+                                    className="w-full bg-slate-700/50 text-white px-4 py-2 rounded-lg h-32 text-sm font-mono border border-purple-500/30"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-green-300 mb-2">Clé Privée</label>
+                                <textarea
+                                    value={rsaPrivateKey}
+                                    onChange={(e) => setRsaPrivateKey(e.target.value)}
+                                    placeholder="Clé privée RSA..."
+                                    className="w-full bg-slate-700/50 text-white px-4 py-2 rounded-lg h-32 text-sm font-mono border border-purple-500/30"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                        <h3 className="text-lg font-semibold text-white mb-4">
+                            {rsaMode === 'encrypt' && '🔐 Chiffrement RSA'}
+                            {rsaMode === 'decrypt' && '🔓 Déchiffrement RSA'}
+                            {rsaMode === 'sign' && '✍️ Signature RSA'}
+                            {rsaMode === 'verify' && '✅ Vérification Signature'}
+                        </h3>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                            {['encrypt', 'decrypt', 'sign', 'verify'].map((mode) => (
+                                <button
+                                    key={mode}
+                                    onClick={() => setRsaMode(mode)}
+                                    className={`py-2 rounded-lg font-medium text-sm ${
+                                        rsaMode === mode
+                                            ? 'bg-green-600 text-white'
+                                            : 'bg-slate-700/50 text-slate-300'
+                                    }`}
+                                >
+                                    {mode === 'encrypt' && 'Chiffrer'}
+                                    {mode === 'decrypt' && 'Déchiffrer'}
+                                    {mode === 'sign' && 'Signer'}
+                                    {mode === 'verify' && 'Vérifier'}
+                                </button>
+                            ))}
+                        </div>
+
+                        <textarea
+                            value={rsaInput}
+                            onChange={(e) => setRsaInput(e.target.value)}
+                            placeholder={
+                                rsaMode === 'encrypt' ? 'Message à chiffrer...' :
+                                rsaMode === 'decrypt' ? 'Message chiffré...' :
+                                'Message à signer/vérifier...'
+                            }
+                            className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg h-32 mb-4 border border-purple-500/30"
+                        />
+
+                        {rsaMode === 'verify' && (
+                            <textarea
+                                value={rsaSignature}
+                                onChange={(e) => setRsaSignature(e.target.value)}
+                                placeholder="Signature à vérifier..."
+                                className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg h-20 mb-4 border border-purple-500/30"
+                            />
+                        )}
+
+                        <button
+                            onClick={handleRSAProcess}
+                            className="w-full bg-gradient-to-r from-green-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-green-700 hover:to-purple-700 transition-all"
+                        >
+                            {rsaMode === 'encrypt' && '🔐 Chiffrer avec RSA'}
+                            {rsaMode === 'decrypt' && '🔓 Déchiffrer avec RSA'}
+                            {rsaMode === 'sign' && '✍️ Signer le message'}
+                            {rsaMode === 'verify' && '✅ Vérifier la signature'}
+                        </button>
+
+                        {(rsaOutput || rsaSignature) && (
+                            <div className="mt-4 space-y-4">
+                                {rsaOutput && (
+                                    <div>
+                                        <label className="block text-green-300 mb-2 font-medium">
+                                            {rsaMode === 'encrypt' && '✅ Message chiffré'}
+                                            {rsaMode === 'decrypt' && '✅ Message déchiffré'}
+                                            {rsaMode === 'verify' && 'Résultat'}
+                                        </label>
+                                        <div className="bg-gradient-to-r from-green-900/50 to-purple-900/50 text-white px-4 py-3 rounded-lg min-h-20 break-words border-2 border-green-500/50 font-mono">
+                                            {rsaOutput}
+                                        </div>
+                                    </div>
+                                )}
+                                {rsaSignature && rsaMode === 'sign' && (
+                                    <div>
+                                        <label className="block text-green-300 mb-2 font-medium">✍️ Signature générée</label>
+                                        <div className="bg-gradient-to-r from-green-900/50 to-purple-900/50 text-white px-4 py-3 rounded-lg min-h-20 break-words border-2 border-green-500/50 font-mono">
+                                            {rsaSignature}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // ==================== COMPOSANT PRINCIPAL ====================
         const CryptoApp = () => {
+            const [activeTab, setActiveTab] = useState('classique');
             const [mode, setMode] = useState('encrypt');
             const [algorithm, setAlgorithm] = useState('cesar');
             const [inputText, setInputText] = useState('');
@@ -86,7 +618,6 @@
             const [vigenereKey, setVigenereKey] = useState('');
             const [affineA, setAffineA] = useState('');
             const [affineB, setAffineB] = useState('');
-            const [showChallenge, setShowChallenge] = useState(false);
             const [errorMessage, setErrorMessage] = useState('');
 
             const letters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -257,9 +788,159 @@
                 setErrorMessage('');
             };
 
+            const renderClassicCrypto = () => (
+                <div className="space-y-6">
+                    <div className="flex gap-4 mb-6">
+                        <button
+                            onClick={() => setMode('encrypt')}
+                            className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                                mode === 'encrypt'
+                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-purple-500/30'
+                            }`}
+                        >
+                            <Lock className="w-5 h-5" />
+                            Chiffrement
+                        </button>
+                        <button
+                            onClick={() => setMode('decrypt')}
+                            className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
+                                mode === 'decrypt'
+                                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                                    : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-purple-500/30'
+                            }`}
+                        >
+                            <Unlock className="w-5 h-5" />
+                            Déchiffrement
+                        </button>
+                    </div>
+
+                    <div className="bg-slate-800/50 rounded-xl p-6 mb-6 border border-purple-500/30">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Key className="w-5 h-5 text-pink-400" />
+                            <h2 className="text-xl font-semibold text-white">Algorithme Classique</h2>
+                        </div>
+                        <div className="grid grid-cols-3 gap-3">
+                            {['cesar', 'vigenere', 'affine'].map((algo) => (
+                                <button
+                                    key={algo}
+                                    onClick={() => {
+                                        setAlgorithm(algo);
+                                        setErrorMessage('');
+                                    }}
+                                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
+                                        algorithm === algo
+                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
+                                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-purple-500/20'
+                                    }`}
+                                >
+                                    {algo === 'cesar' && 'César'}
+                                    {algo === 'vigenere' && 'Vigenère'}
+                                    {algo === 'affine' && 'Affine'}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                        <h2 className="text-xl font-semibold text-white mb-4">Configuration</h2>
+                        
+                        {algorithm === 'cesar' && (
+                            <div className="mb-4">
+                                <label className="block text-pink-300 mb-2 font-medium">Clé César</label>
+                                <input
+                                    type="number"
+                                    value={cesarKey}
+                                    onChange={(e) => setCesarKey(e.target.value)}
+                                    className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg border border-purple-500/30"
+                                    placeholder="Décalage (ex: 3, 13)"
+                                />
+                            </div>
+                        )}
+
+                        {algorithm === 'vigenere' && (
+                            <div className="mb-4">
+                                <label className="block text-pink-300 mb-2 font-medium">Clé Vigenère</label>
+                                <input
+                                    type="text"
+                                    value={vigenereKey}
+                                    onChange={(e) => setVigenereKey(e.target.value)}
+                                    className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg border border-purple-500/30"
+                                    placeholder="Clé texte (ex: WICE)"
+                                />
+                            </div>
+                        )}
+
+                        {algorithm === 'affine' && (
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label className="block text-pink-300 mb-2 font-medium">Valeur 'a'</label>
+                                    <input
+                                        type="number"
+                                        value={affineA}
+                                        onChange={(e) => setAffineA(e.target.value)}
+                                        className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg border border-purple-500/30"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-pink-300 mb-2 font-medium">Valeur 'b'</label>
+                                    <input
+                                        type="number"
+                                        value={affineB}
+                                        onChange={(e) => setAffineB(e.target.value)}
+                                        className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg border border-purple-500/30"
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-pink-300 mb-2 font-medium">
+                                    {mode === 'encrypt' ? '📝 Message clair' : '🔒 Message chiffré'}
+                                </label>
+                                <textarea
+                                    value={inputText}
+                                    onChange={(e) => setInputText(e.target.value)}
+                                    className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg h-32 border border-purple-500/30"
+                                    placeholder="Entrez votre message..."
+                                />
+                            </div>
+
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={handleProcess}
+                                    className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-700 hover:to-purple-700 transition-all"
+                                >
+                                    {mode === 'encrypt' ? '🔐 Chiffrer' : '🔓 Déchiffrer'}
+                                </button>
+                                <button
+                                    onClick={handleReset}
+                                    className="px-6 bg-slate-700/50 text-white py-3 rounded-lg font-semibold hover:bg-slate-600/50 transition-all border border-purple-500/30"
+                                >
+                                    Réinitialiser
+                                </button>
+                            </div>
+
+                            {output && (
+                                <div>
+                                    <label className="block text-pink-300 mb-2 font-medium">
+                                        {mode === 'encrypt' ? '✅ Message chiffré' : '✅ Message déchiffré'}
+                                    </label>
+                                    <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 text-white px-4 py-3 rounded-lg min-h-32 break-words border-2 border-pink-500/50 font-mono">
+                                        {output}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+
             return (
                 <div className="min-h-screen bg-gradient-to-br from-purple-950 via-pink-900 to-violet-950 p-4">
-                    <div className="max-w-4xl mx-auto">
+                    <div className="max-w-6xl mx-auto">
+                        {/* En-tête */}
                         <div className="text-center mb-8 pt-8">
                             <div className="inline-flex items-center justify-center gap-3 mb-4 bg-gradient-to-r from-purple-600 to-pink-600 px-8 py-3 rounded-full shadow-2xl">
                                 <Flag className="w-8 h-8 text-white animate-pulse" />
@@ -271,243 +952,45 @@
                             <p className="text-purple-300">Capture The Flag - 1ère Édition</p>
                             
                             <div className="mt-4 inline-block bg-purple-800/50 px-6 py-2 rounded-full border border-purple-400" style={{backdropFilter: 'blur(10px)'}}>
-                                <span className="text-purple-200 font-semibold">🔐 Cyber221 x WiCE x TDSI/LACGAA</span>
+                                <span className="text-purple-200 font-semibold">Cyber221 x WiCE x TDSI/LACGAA</span>
                             </div>
                         </div>
 
-                        <div className="bg-gradient-to-r from-pink-600 to-purple-600 rounded-xl p-4 mb-6 shadow-xl">
-                            <div className="flex items-center justify-between flex-wrap gap-4">
-                                <div className="flex items-center gap-3">
-                                    <Shield className="w-6 h-6 text-white" />
-                                    <div>
-                                        <h3 className="text-white font-bold">Démonstration Interactive</h3>
-                                        <p className="text-pink-100 text-sm">Explorez les algorithmes de chiffrement classiques</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowChallenge(!showChallenge)}
-                                    className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition-all font-semibold"
-                                >
-                                    {showChallenge ? 'Masquer' : 'Mini Challenge'}
-                                </button>
-                            </div>
-                        </div>
-
-                        {showChallenge && (
-                            <div className="bg-yellow-500/10 border-2 border-yellow-500 rounded-xl p-6 mb-6 shadow-xl">
-                                <div className="flex items-start gap-3 mb-4">
-                                    <Flag className="w-6 h-6 text-yellow-400 mt-1" />
-                                    <div>
-                                        <h3 className="text-yellow-300 font-bold text-lg mb-2">🎯 Challenge: Déchiffrez le message !</h3>
-                                        <p className="text-white mb-3">Message chiffré avec César (clé = 13) :</p>
-                                        <div className="bg-black/30 p-4 rounded-lg mb-3">
-                                            <code className="text-green-400 font-mono">Jvpr PGS rfg har pbzcrgvgvba cnffvbaaagr !</code>
-                                        </div>
-                                        <p className="text-pink-200 text-sm">💡 Indice : Essayez différentes valeurs de clé César pour trouver le message original</p>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex gap-4 mb-6">
-                            <button
-                                onClick={() => setMode('encrypt')}
-                                className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                                    mode === 'encrypt'
-                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-purple-500/30'
-                                }`}
-                                style={mode === 'encrypt' ? {} : {backdropFilter: 'blur(10px)'}}
-                            >
-                                <Lock className="w-5 h-5" />
-                                Chiffrement
-                            </button>
-                            <button
-                                onClick={() => setMode('decrypt')}
-                                className={`flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                                    mode === 'decrypt'
-                                        ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                                        : 'bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border border-purple-500/30'
-                                }`}
-                                style={mode === 'decrypt' ? {} : {backdropFilter: 'blur(10px)'}}
-                            >
-                                <Unlock className="w-5 h-5" />
-                                Déchiffrement
-                            </button>
-                        </div>
-
-                        <div className="bg-slate-800/50 rounded-xl p-6 mb-6 shadow-xl border border-purple-500/30" style={{backdropFilter: 'blur(10px)'}}>
-                            <div className="flex items-center gap-2 mb-4">
-                                <Key className="w-5 h-5 text-pink-400" />
-                                <h2 className="text-xl font-semibold text-white">Algorithme de Chiffrement</h2>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3">
-                                <button
-                                    onClick={() => {
-                                        setAlgorithm('cesar');
-                                        setErrorMessage('');
-                                    }}
-                                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
-                                        algorithm === 'cesar'
-                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-purple-500/20'
-                                    }`}
-                                >
-                                    César
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setAlgorithm('vigenere');
-                                        setErrorMessage('');
-                                    }}
-                                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
-                                        algorithm === 'vigenere'
-                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-purple-500/20'
-                                    }`}
-                                >
-                                    Vigenère
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setAlgorithm('affine');
-                                        setErrorMessage('');
-                                    }}
-                                    className={`py-3 px-4 rounded-lg font-medium transition-all ${
-                                        algorithm === 'affine'
-                                            ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg'
-                                            : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 border border-purple-500/20'
-                                    }`}
-                                >
-                                    Affine
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-slate-800/50 rounded-xl p-6 mb-6 shadow-xl border border-purple-500/30" style={{backdropFilter: 'blur(10px)'}}>
-                            <h2 className="text-xl font-semibold text-white mb-4">Configuration de la Clé</h2>
-                            
-                            {algorithm === 'cesar' && (
-                                <div>
-                                    <label className="block text-pink-300 mb-2 font-medium">Clé César (décalage)</label>
-                                    <input
-                                        type="number"
-                                        value={cesarKey}
-                                        onChange={(e) => setCesarKey(e.target.value)}
-                                        className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 border border-purple-500/30"
-                                        placeholder="Entrez un nombre (ex: 3, 13)"
-                                    />
-                                </div>
-                            )}
-
-                            {algorithm === 'vigenere' && (
-                                <div>
-                                    <label className="block text-pink-300 mb-2 font-medium">Clé Vigenère (texte)</label>
-                                    <input
-                                        type="text"
-                                        value={vigenereKey}
-                                        onChange={(e) => setVigenereKey(e.target.value)}
-                                        className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 border border-purple-500/30"
-                                        placeholder="Entrez la clé (ex: WICE, CYBER)"
-                                    />
-                                </div>
-                            )}
-
-                            {algorithm === 'affine' && (
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-pink-300 mb-2 font-medium">
-                                            Valeur 'a' (doit être premier avec 26)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={affineA}
-                                            onChange={(e) => {
-                                                setAffineA(e.target.value);
-                                                setErrorMessage('');
-                                            }}
-                                            className={`w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 border ${
-                                                estPremierAvec26(parseInt(affineA)) 
-                                                    ? 'focus:ring-pink-500 border-purple-500/30' 
-                                                    : 'focus:ring-red-500 border-red-500/50'
-                                            }`}
-                                        />
-                                        <p className="text-xs text-purple-300 mt-2">
-                                            Valeurs valides: 1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25
-                                        </p>
-                                        {!estPremierAvec26(parseInt(affineA)) && affineA !== '' && parseInt(affineA) !== 0 && (
-                                            <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                                                <AlertCircle className="w-3 h-3" />
-                                                {affineA} n'est pas premier avec 26
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <label className="block text-pink-300 mb-2 font-medium">Valeur 'b'</label>
-                                        <input
-                                            type="number"
-                                            value={affineB}
-                                            onChange={(e) => setAffineB(e.target.value)}
-                                            className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 border border-purple-500/30"
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {errorMessage && (
-                            <div className="bg-red-500/10 border-2 border-red-500 rounded-xl p-4 mb-6 shadow-xl">
-                                <div className="flex items-start gap-3">
-                                    <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" />
-                                    <p className="text-red-300 font-medium">{errorMessage}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="bg-slate-800/50 rounded-xl p-6 mb-6 shadow-xl border border-purple-500/30" style={{backdropFilter: 'blur(10px)'}}>
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-pink-300 mb-2 font-medium">
-                                        {mode === 'encrypt' ? '📝 Message clair' : '🔒 Message chiffré'}
-                                    </label>
-                                    <textarea
-                                        value={inputText}
-                                        onChange={(e) => setInputText(e.target.value)}
-                                        className="w-full bg-slate-700/50 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 h-32 border border-purple-500/30"
-                                        placeholder="Entrez votre message..."
-                                    />
-                                </div>
-
-                                <div className="flex gap-3">
+                        {/* Navigation par onglets */}
+                        <div className="bg-slate-800/50 rounded-xl p-2 mb-6 border border-purple-500/30">
+                            <div className="grid grid-cols-4 gap-2">
+                                {[
+                                    { id: 'classique', name: '🔓 Classique', color: 'from-purple-600 to-pink-600' },
+                                    { id: 'symetrique', name: '⚡ Moderne', color: 'from-blue-600 to-cyan-600' },
+                                    { id: 'asymetrique', name: '🔑 Asymétrique', color: 'from-green-600 to-emerald-600' },
+                                    { id: 'hachage', name: '🔐 Hachage', color: 'from-indigo-600 to-purple-600' }
+                                ].map((tab) => (
                                     <button
-                                        onClick={handleProcess}
-                                        className="flex-1 bg-gradient-to-r from-pink-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-700 hover:to-purple-700 transition-all shadow-lg"
+                                        key={tab.id}
+                                        onClick={() => setActiveTab(tab.id)}
+                                        className={`py-3 px-4 rounded-lg font-semibold transition-all ${
+                                            activeTab === tab.id
+                                                ? `bg-gradient-to-r ${tab.color} text-white shadow-lg`
+                                                : 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                                        }`}
                                     >
-                                        {mode === 'encrypt' ? '🔐 Chiffrer' : '🔓 Déchiffrer'}
+                                        {tab.name}
                                     </button>
-                                    <button
-                                        onClick={handleReset}
-                                        className="px-6 bg-slate-700/50 text-white py-3 rounded-lg font-semibold hover:bg-slate-600/50 transition-all border border-purple-500/30"
-                                    >
-                                        Réinitialiser
-                                    </button>
-                                </div>
-
-                                {output && (
-                                    <div>
-                                        <label className="block text-pink-300 mb-2 font-medium">
-                                            {mode === 'encrypt' ? '✅ Message chiffré' : '✅ Message déchiffré'}
-                                        </label>
-                                        <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 text-white px-4 py-3 rounded-lg min-h-32 break-words border-2 border-pink-500/50 font-mono">
-                                            {output}
-                                        </div>
-                                    </div>
-                                )}
+                                ))}
                             </div>
                         </div>
 
-                        <div className="text-center text-purple-300 pb-8">
-                            <p className="mb-4">💜 Une initiative du programme Women in Cybersecurity Education</p>
+                        {/* Contenu des onglets */}
+                        <div className="bg-slate-800/50 rounded-xl p-6 border border-purple-500/30">
+                            {activeTab === 'classique' && renderClassicCrypto()}
+                            {activeTab === 'symetrique' && <AESManager />}
+                            {activeTab === 'asymetrique' && <RSAManager />}
+                            {activeTab === 'hachage' && <HashManager />}
+                        </div>
+
+                        {/* Pied de page */}
+                        <div className="text-center text-purple-300 pb-8 mt-8">
+                            <p className="mb-4">Une initiative de la TDSI/LACGAA pour le programme Women in Cybersecurity Education</p>
                             <p className="text-sm mb-6">Cyber221 - WiCE CTF 2025 - TDSI/LACGAA</p>
                             
                             <div className="border-t border-purple-500/30 pt-6 mt-6">
